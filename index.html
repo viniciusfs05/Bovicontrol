@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoviControl</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#d4a017">
+  <meta name="description" content="Controle de gado e cotacoes em tempo real - Goias. PWA para gestao pecuaria.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="BoviControl">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header>
+  <div class="logo" aria-label="BoviControl">&#x1F404; BOVI<span>CONTROL</span></div>
+  <div class="hbadge" onclick="atualizarCotacao()" title="Toque para atualizar cotacao" role="button" tabindex="0" aria-label="Atualizar cotacao">
+    <div>
+      <div class="hbadge-lbl">Boi Gordo &#x2014; GO</div>
+      <div class="hbadge-val" id="h-preco">Toque p/ atualizar</div>
+    </div>
+    <div class="dot busy" id="h-dot"></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <button class="btn-toolbar" onclick="exportarDados()" title="Exportar backup dos dados">
+      &#x1F4E5; Exportar Backup
+    </button>
+    <button class="btn-toolbar" onclick="importarDados()" title="Importar dados de um backup">
+      &#x1F4E4; Importar Backup
+    </button>
+    <button class="btn-toolbar" onclick="limparDados()" title="Limpar todos os dados">
+      &#x1F5D1; Limpar Dados
+    </button>
+  </div>
+
+  <!-- COTACAO BOI GORDO -->
+  <section class="cot-card" aria-label="Cotacao do boi gordo">
+    <div class="cot-top">
+      <span class="cot-titulo">&#x1F4CA; BOI GORDO &#x2014; GOIAS</span>
+      <span class="cot-hora" id="cot-hora"></span>
+      <button class="btn-atualizar" id="btn-cot" onclick="atualizarCotacao()">
+        <span id="ic-cot">&#x21BB;</span> Atualizar @
+      </button>
+    </div>
+    <div class="cot-body">
+      <div class="cot-preco" id="cot-preco">&#x2014;</div>
+      <div class="cot-info">
+        <div class="cot-unit">R$ por arroba (@) &#x00B7; Goias</div>
+        <div class="cot-fonte" id="cot-fonte">Clique em Atualizar @</div>
+        <div class="cot-status" id="cot-status"></div>
+        <a class="cot-link" href="https://www.cepea.esalq.usp.br/br/indicador/boi-gordo.aspx" target="_blank" rel="noopener noreferrer">Ver CEPEA/ESALQ &#x2197;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESUMO -->
+  <section class="sum-grid" aria-label="Resumo financeiro">
+    <div class="sum-card" style="--ca:var(--gold)">
+      <div class="sum-lbl">@ Boi Gordo</div>
+      <div class="sum-val neu" id="s-at">R$ &#x2014;</div>
+      <div class="sum-sub">Goias &#x00B7; hoje</div>
+    </div>
+    <div class="sum-card" style="--ca:var(--blu)">
+      <div class="sum-lbl">Total Cabecas</div>
+      <div class="sum-val" id="s-cab">0</div>
+      <div class="sum-sub">animais no lote</div>
+    </div>
+    <div class="sum-card" style="--ca:var(--red)">
+      <div class="sum-lbl">Custo de Compra</div>
+      <div class="sum-val" id="s-compra">R$ 0</div>
+      <div class="sum-sub">total dos lotes</div>
+    </div>
+    <div class="sum-card" style="--ca:#bc8cff">
+      <div class="sum-lbl">Gastos Operacionais</div>
+      <div class="sum-val" id="s-gastos">R$ 0</div>
+      <div class="sum-sub">despesas totais</div>
+    </div>
+    <div class="sum-card" style="--ca:var(--grn)">
+      <div class="sum-lbl">Lucro / Prejuizo</div>
+      <div class="sum-val" id="s-lucro">R$ 0</div>
+      <div class="sum-sub" id="s-roi">ROI: &#x2014;</div>
+    </div>
+  </section>
+
+  <!-- TABS -->
+  <nav class="tabs" aria-label="Secoes do aplicativo">
+    <button class="tab active" onclick="goTab('compra',this)">&#x1F6D2; Compra</button>
+    <button class="tab" onclick="goTab('gastos',this)">&#x1F4CB; Gastos</button>
+    <button class="tab" onclick="goTab('venda',this)">&#x1F4B0; Venda</button>
+    <button class="tab" onclick="goTab('ia',this)">&#x1F916; Assistente IA</button>
+  </nav>
+
+  <!-- COMPRA -->
+  <section class="panel active" id="panel-compra" aria-label="Gestao de compra de lotes">
+    <div class="note">&#x2139;&#xFE0F; Use <b>Preco/@</b> ou <b>Preco/Cabeca</b> &#x2014; o total calcula automaticamente.</div>
+    <div class="tbl-wrap">
+      <div class="tbl-head">
+        <span class="tbl-title">LOTES DE COMPRA</span>
+        <button class="btn-add" onclick="addLote()">+ Lote</button>
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr>
+            <th>Lote</th><th>Cabecas</th><th>Peso (@)</th>
+            <th>R$/@</th><th>R$/Cab</th><th>Total</th><th></th>
+          </tr></thead>
+          <tbody id="tb-compra"></tbody>
+          <tfoot><tr class="tot-row">
+            <td><b>TOTAL</b></td>
+            <td class="mono" id="tot-cab">0</td>
+            <td>&#x2014;</td><td>&#x2014;</td><td>&#x2014;</td>
+            <td class="mono" id="tot-custo">R$ 0,00</td>
+            <td></td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- GASTOS -->
+  <section class="panel" id="panel-gastos" aria-label="Gastos operacionais">
+    <div class="tbl-wrap">
+      <div class="tbl-head"><span class="tbl-title">GASTOS OPERACIONAIS</span></div>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr><th>Descricao</th><th>Valor Unit.</th><th>Qtd</th><th>Total</th></tr></thead>
+          <tbody id="tb-gastos"></tbody>
+          <tfoot><tr class="tot-row">
+            <td><b>TOTAL GERAL</b></td><td></td><td></td>
+            <td class="mono" id="tot-gastos">R$ 0,00</td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- VENDA -->
+  <section class="panel" id="panel-venda" aria-label="Simulacao de venda">
+    <div class="v-grid">
+      <div class="v-box">
+        <h3>RECEITA DE VENDA</h3>
+        <div class="v-row"><span class="v-lbl">Cabecas vendidas</span><input type="number" class="v-inp" id="v-cab" value="0" oninput="calcVenda()" aria-label="Cabecas vendidas"></div>
+        <div class="v-row"><span class="v-lbl">Peso medio (@)</span><input type="number" class="v-inp" id="v-peso" value="0" oninput="calcVenda()" aria-label="Peso medio em arrobas"></div>
+        <div class="v-row"><span class="v-lbl">Preco venda/@</span><input type="number" class="v-inp" id="v-at" value="0" oninput="calcVenda()" aria-label="Preco de venda por arroba"></div>
+        <div class="v-row"><span class="v-lbl">Preco venda/Cab</span><input type="number" class="v-inp" id="v-pcab" value="0" oninput="calcVenda()" aria-label="Preco de venda por cabeca"></div>
+        <div class="v-row"><span class="v-lbl">Receita via @</span><span class="v-val mono" id="r-at">R$ 0,00</span></div>
+        <div class="v-row"><span class="v-lbl">Receita via Cab</span><span class="v-val mono" id="r-cab">R$ 0,00</span></div>
+        <div class="v-row"><span class="v-lbl"><b>Total Receita</b></span><span class="v-val mono neu" id="r-total">R$ 0,00</span></div>
+      </div>
+      <div class="v-box">
+        <h3>RESUMO DE CUSTOS</h3>
+        <div class="v-row"><span class="v-lbl">Custo de compra</span><span class="v-val mono" id="r-compra">R$ 0,00</span></div>
+        <div class="v-row"><span class="v-lbl">Gastos operacionais</span><span class="v-val mono" id="r-gast">R$ 0,00</span></div>
+        <div class="v-row"><span class="v-lbl"><b>Custo Total</b></span><span class="v-val mono neg" id="r-ctotal">R$ 0,00</span></div>
+        <div class="v-row"><span class="v-lbl">Lucro Bruto</span><span class="v-val mono" id="r-lucro">R$ 0,00</span></div>
+        <div class="v-row"><span class="v-lbl">Margem</span><span class="v-val mono" id="r-margem">&#x2014;</span></div>
+        <div class="v-row"><span class="v-lbl">ROI</span><span class="v-val mono" id="r-roi2">&#x2014;</span></div>
+      </div>
+    </div>
+    <div class="result-big">
+      <div class="rb-lbl">Resultado Final</div>
+      <div class="rb-val" id="rb-val">R$ 0,00</div>
+      <div class="rb-sub" id="rb-sub">Preencha os dados</div>
+    </div>
+  </section>
+
+  <!-- IA -->
+  <section class="panel" id="panel-ia" aria-label="Assistente IA">
+    <div class="ai-wrap">
+      <div class="ai-top">
+        <span style="font-size:1.3rem">&#x1F916;</span>
+        <div>
+          <div class="ai-ttl">ASSISTENTE PECUARIO</div>
+          <div class="ai-sub">Powered by Claude &#x00B7; Analises e cotacoes em tempo real</div>
+        </div>
+      </div>
+
+      <!-- CHAVE API -->
+      <div class="ai-key-row">
+        <span class="ai-key-lbl">&#x1F511; Chave API:</span>
+        <input class="ai-key-inp" type="password" id="api-key-inp" placeholder="Cole sua chave Anthropic aqui (sk-ant-...)" oninput="salvarChave()" aria-label="Chave API Anthropic">
+        <span class="key-ok nao" id="key-status">Sem chave</span>
+      </div>
+
+      <div class="ai-msgs" id="ai-msgs" role="log" aria-label="Mensagens do assistente">
+        <div class="msg msg-ai">Ola! Para usar o assistente, cole sua chave API Anthropic no campo acima (comeca com sk-ant-). Voce pode obter uma em console.anthropic.com. Depois e so perguntar!</div>
+      </div>
+      <div class="ai-quick">
+        <button class="qbtn" onclick="qask('Qual o preco atual da arroba do boi gordo em Goias hoje?')">&#x1F4CA; Preco @ hoje</button>
+        <button class="qbtn" onclick="qask('Como esta o mercado de gado em Goias este mes?')">&#x1F4C8; Mercado</button>
+        <button class="qbtn" onclick="qask('Analise minha operacao e de recomendacoes.')">&#x1F50D; Analisar</button>
+        <button class="qbtn" onclick="qask('Melhor epoca para vender boi gordo em Goias?')">&#x1F4C5; Epoca</button>
+      </div>
+      <div class="ai-inp-row">
+        <textarea class="ai-inp" id="ai-inp" placeholder="Pergunte sobre precos, mercado ou sua operacao..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAI()}" aria-label="Digite sua pergunta"></textarea>
+        <button class="btn-send" id="btn-send" onclick="sendAI()" aria-label="Enviar mensagem">&#x27A4;</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  BoviControl v2.0 &#x00B7; Gestao Pecuaria Inteligente &#x00B7; Goias, Brasil
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
