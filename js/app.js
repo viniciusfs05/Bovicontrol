@@ -72,7 +72,7 @@ function toast(msg, tipo) {
   var div = document.createElement('div');
   div.className = 'toast ' + (tipo || 'info');
   var icons = { success: '\u2714', error: '\u2716', info: '\u2139' };
-  div.innerHTML = '<span>' + (icons[tipo] || icons.info) + '</span> ' + msg;
+  div.textContent = (icons[tipo] || icons.info) + ' ' + msg;
   document.body.appendChild(div);
   setTimeout(function() { div.remove(); }, 3000);
 }
@@ -103,7 +103,8 @@ function carregarChave() {
     if (saved) {
       apiKey = saved;
       document.getElementById('api-key-inp').value = saved;
-      salvarChave();
+      document.getElementById('key-status').textContent = '\u2713 Ativa';
+      document.getElementById('key-status').className = 'key-ok sim';
     }
   } catch (e) {}
 }
